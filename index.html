@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>線上預約</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root{--bg:#f6f3ef;--card:#fff;--ink:#2f2a26;--mute:#8a817a;--line:#e7e0d8;--main:#b5766a;--main2:#f3e4df;--bad:#b9534a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px}
+.wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:20px;margin:6px 0 2px}
+.hello{color:var(--mute);font-size:14px;margin-bottom:14px}
+.tabs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:10px;border-radius:9px;cursor:pointer}
+.tab.on{background:var(--main);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.step{font-size:13px;color:var(--main);font-weight:600;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:#fff;cursor:pointer;font-size:15px}
+.chip.on{background:var(--main);color:#fff;border-color:var(--main)}
+.seg{display:flex;gap:10px}
+.seg .chip{flex:1;text-align:center;padding:14px;border-radius:12px}
+.seg .chip small{display:block;font-size:12px;opacity:.75;margin-top:2px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;font-family:inherit;color:var(--ink)}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--main);color:#fff;font-size:16px;margin-top:16px;cursor:pointer;font-family:inherit}
+.btn.ghost{background:var(--main2);color:var(--main)}
+.btn.bad{background:#f6e1df;color:var(--bad)}
+.btn:disabled{opacity:.5}
+.mute{color:var(--mute);font-size:14px}
+.note{background:var(--main2);color:var(--main);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.big{font-size:28px;letter-spacing:4px;font-weight:700;color:var(--main);text-align:center;margin:8px 0}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border:none}
+.kv span:first-child{color:var(--mute)}
+.center{text-align:center;padding:40px 0}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#2f2a26;color:#fff;padding:12px 18px;border-radius:22px;display:none;z-index:20;max-width:90%;text-align:center;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="center mute">載入中</div></div>
+<div id="toast"></div>
+<script>
+/* ====== 請填入這兩個值 ====== */
+const LIFF_ID = '2012558816-evy328ae';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzGLRa3NMYvC2p7Sgv8z_IRTGkVSWtgMP6Y0bshC5xG9capiRIhq9wDuN3CikiSZ74eXA/exec';
+/* =========================== */
+
+const S={mode:'guest',idToken:'',name:'',cfg:null,tab:'book',sel:{},dates:null,times:null,loading:'',mine:null,guestQ:null};
+const params=new URLSearchParams(location.search);
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3000);}
+async function call(action,data){
+  const body=Object.assign({action},data||{});
+  if(S.mode==='line'&&S.idToken)body.idToken=S.idToken;
+  const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  const j=await res.json();
+  if(!j.ok){
+    if(S.mode==='line'&&j.error.indexOf('登入已過期')>=0){
+      toGuest();
+      if(action==='book')return call(action,data);
+      render();
+      throw new Error('LINE 登入失效 已切換成手機預約模式');
+    }
+    throw new Error(j.error);
+  }
+  return j.data;
+}
+function normPhone(v){
+  let s=String(v||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/\D/g,'');
+  if(/^8869\d{8}$/.test(s))s='0'+s.slice(3);
+  return s;
+}
+function phoneHint(v){
+  const s=normPhone(v);
+  if(!s)return {ok:false,msg:''};
+  if(!/^0/.test(s)||(s.length>=2&&!/^09/.test(s)))return {ok:false,msg:'手機號碼要 09 開頭'};
+  if(s.length<10)return {ok:false,msg:'還差 '+(10-s.length)+' 碼'};
+  if(s.length>10)return {ok:false,msg:'號碼多了 '+(s.length-10)+' 碼'};
+  return {ok:true,msg:'格式正確'};
+}
+function attachPhone(id){
+  const el=$(id);if(!el)return;
+  let tip=$(id+'_tip');
+  if(!tip){tip=document.createElement('div');tip.id=id+'_tip';tip.style.cssText='font-size:13px;margin-top:4px;min-height:18px';el.insertAdjacentElement('afterend',tip);}
+  const upd=()=>{const h=phoneHint(el.value);tip.textContent=h.msg;tip.style.color=h.ok?'#5f8f6e':'var(--bad)';el.style.borderColor=el.value?(h.ok?'#5f8f6e':'var(--bad)'):'';};
+  el.addEventListener('input',upd);
+  el.addEventListener('blur',()=>{const s=normPhone(el.value);if(/^09\d{8}$/.test(s))el.value=s;upd();});
+  if(el.value)upd();
+}
+function toGuest(){S.mode='guest';S.idToken='';S.loginFailed=true;S.mine=null;}
+function flag(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v);}catch(e){return null;}}
+function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);}
+
+async function boot(){
+  if(params.get('guest')){S.mode='guest';return start();}
+  try{
+    if(typeof liff==='undefined')throw new Error('no sdk');
+    await withTimeout(liff.init({liffId:LIFF_ID}),8000);
+    if(!liff.isLoggedIn()){
+      if(liff.isInClient()&&!flag('triedLogin')){flag('triedLogin','1');liff.login({redirectUri:location.href});return;}
+      if(liff.isInClient())throw new Error('login failed');
+      return renderLoginChoice();
+    }
+    S.idToken=liff.getIDToken()||'';
+    if(!S.idToken)throw new Error('no token');
+    S.mode='line';
+    try{const p=await liff.getProfile();S.name=p.displayName||'';}catch(e){}
+  }catch(e){
+    if(params.get('bind'))return renderMsg('請用手機 LINE 打開這個連結');
+    S.mode='guest';S.loginFailed=true;
+  }
+  if(params.get('bind'))return renderBind();
+  await start();
+}
+
+function renderLoginChoice(){
+  $('app').innerHTML=`<h1>線上預約</h1><div class="card">
+  <div class="mute">用 LINE 登入可以收到預約通知 也能直接查詢自己的預約</div>
+  <button class="btn" id="goLine">用 LINE 登入</button>
+  <button class="btn ghost" id="goGuest">不登入 用手機預約</button></div>`;
+  $('goLine').onclick=()=>liff.login({redirectUri:location.href});
+  $('goGuest').onclick=()=>{S.mode='guest';start();};
+}
+
+function renderMsg(m){$('app').innerHTML=`<div class="card center">${esc(m)}</div>`;}
+
+async function start(){
+  renderMsg('載入中');
+  try{S.cfg=await call('init');}catch(e){return renderMsg('系統暫時無法使用 請稍後再試');}
+  render();
+}
+
+function render(){
+  const c=S.cfg;
+  let h=`<h1>線上預約</h1><div class="hello">${S.mode==='line'?(S.name?esc(S.name)+' 你好':'已用 LINE 登入'):'訪客模式'}</div>`;
+  if(S.loginFailed)h+=`<div class="note">LINE 登入暫時無法使用 你可以直接用手機預約 完成後請記下預約碼</div>`;
+  h+=`<div class="tabs"><div class="tab ${S.tab==='book'?'on':''}" data-tab="book">我要預約</div><div class="tab ${S.tab==='mine'?'on':''}" data-tab="mine">我的預約</div></div>`;
+  if(S.tab==='book')h+=c.opensOn?`<div class="card center">預約將於 ${esc(c.opensOn)} 開放<br><span class="mute">敬請期待</span></div>`:bookHtml();
+  else h+=mineHtml();
+  if(S.mode==='line')h+=`<div class="mute" style="text-align:center;margin-top:20px"><a href="#" id="useGuest" style="color:var(--mute)">LINE 登入有問題嗎 改用手機預約</a></div>`;
+  $('app').innerHTML=h;
+  if($('useGuest'))$('useGuest').onclick=e=>{e.preventDefault();toGuest();S.loginFailed=false;render();};
+  document.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{S.tab=el.dataset.tab;if(S.tab==='mine'&&S.mode==='line')loadMine();else render();});
+  bindBook();bindMine();
+}
+
+/* ====== 預約流程 ====== */
+function placeReady(){const s=S.sel;return s.type==='門市'?!!s.location:(s.type==='到府'&&!!s.county&&!!s.district);}
+function q(){const s=S.sel;return {type:s.type,location:s.location,county:s.county,district:s.district};}
+
+function bookHtml(){
+  const c=S.cfg,s=S.sel;
+  const hasHome=Object.keys(c.areas).length>0;
+  let h=`<div class="card"><div class="step">1 選擇服務方式</div><div class="seg">
+  <div class="chip ${s.type==='門市'?'on':''}" data-type="門市">門市<small>${c.dur['門市']} 分鐘</small></div>
+  ${hasHome?`<div class="chip ${s.type==='到府'?'on':''}" data-type="到府">到府<small>${c.dur['到府']} 分鐘</small></div>`:''}
+  </div></div>`;
+  if(s.type==='門市'){
+    h+=`<div class="card" id="sec2"><div class="step">2 選擇館別</div><div class="chips">${c.locations.map(l=>`<div class="chip ${s.location===l.name?'on':''}" data-loc="${esc(l.name)}">${esc(l.name)}</div>`).join('')}</div>
+    ${s.location?(()=>{const l=c.locations.find(x=>x.name===s.location);return l&&l.address?`<div class="mute" style="margin-top:8px">${esc(l.address)}</div>`:'';})():''}</div>`;
+  }
+  if(s.type==='到府'){
+    h+=`<div class="card" id="sec2"><div class="step">2 選擇服務區域</div>
+    <label>縣市</label><select id="county"><option value="">請選擇</option>${Object.keys(c.areas).map(x=>`<option ${s.county===x?'selected':''}>${esc(x)}</option>`).join('')}</select>
+    ${s.county?`<label>行政區</label><select id="district"><option value="">請選擇</option>${(c.areas[s.county]||[]).map(x=>`<option ${s.district===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`:''}
+    <div class="mute" style="margin-top:8px">找不到你的區域 代表目前還沒開放到府服務</div></div>`;
+  }
+  if(placeReady()){
+    h+=`<div class="card" id="sec3"><div class="step">3 選擇日期</div>`;
+    if(S.loading==='dates')h+=`<div class="mute">查詢中</div>`;
+    else if(!S.dates||!S.dates.length)h+=`<div class="mute">目前沒有可預約的日期</div>`;
+    else h+=`<div class="chips">${S.dates.map(d=>`<div class="chip ${s.date===d.date?'on':''}" data-date="${d.date}">${esc(d.label)}</div>`).join('')}</div>`;
+    h+=`</div>`;
+  }
+  if(s.date){
+    h+=`<div class="card" id="sec4"><div class="step">4 選擇時段</div>`;
+    if(S.loading==='times')h+=`<div class="mute">查詢中</div>`;
+    else if(!S.times||!S.times.length)h+=`<div class="mute">這天已經約滿了 請換一天</div>`;
+    else h+=`<div class="chips">${S.times.map(t=>`<div class="chip ${s.time===t?'on':''}" data-time="${t}">${t}</div>`).join('')}</div>`;
+    h+=`</div>`;
+  }
+  if(s.time){
+    h+=`<div class="card" id="sec5"><div class="step">5 填寫資料</div>
+    <label>姓名</label><input id="fName" value="${esc(s.name||S.name)}" autocomplete="name">
+    <label>手機</label><input id="fPhone" type="tel" inputmode="numeric" placeholder="0912345678" value="${esc(s.phone||'')}" autocomplete="tel">
+    ${s.type==='到府'?`<label>到府地址</label><input id="fAddr" value="${esc(s.address||'')}" placeholder="${esc(s.county+s.district)}…">`:''}
+    <label>備註 選填</label><textarea id="fNote" rows="2">${esc(s.note||'')}</textarea>
+    <div class="card" style="margin:16px 0 0;background:var(--bg)">
+      <div class="kv"><span>日期</span><span>${esc((S.dates.find(d=>d.date===s.date)||{}).label||s.date)}</span></div>
+      <div class="kv"><span>時間</span><span>${s.time}</span></div>
+      <div class="kv"><span>地點</span><span>${esc(s.type==='門市'?s.location:'到府 '+s.county+s.district)}</span></div>
+    </div>
+    <button class="btn" id="submit">確認預約</button></div>`;
+  }
+  return h;
+}
+
+function bindBook(){
+  if(S.tab!=='book')return;
+  document.querySelectorAll('[data-type]').forEach(el=>el.onclick=()=>{S.sel={type:el.dataset.type};S.dates=null;S.times=null;render();scrollTo('sec2');});
+  document.querySelectorAll('[data-loc]').forEach(el=>el.onclick=()=>{S.sel={type:'門市',location:el.dataset.loc};loadDates();});
+  if($('county'))$('county').onchange=e=>{S.sel={type:'到府',county:e.target.value};S.dates=null;render();};
+  if($('district'))$('district').onchange=e=>{S.sel={type:'到府',county:S.sel.county,district:e.target.value};if(e.target.value)loadDates();else render();};
+  document.querySelectorAll('[data-date]').forEach(el=>el.onclick=()=>{S.sel.date=el.dataset.date;delete S.sel.time;loadTimes();});
+  document.querySelectorAll('[data-time]').forEach(el=>el.onclick=()=>{keepForm();S.sel.time=el.dataset.time;render();scrollTo('sec5');});
+  if($('submit'))$('submit').onclick=submit;
+  attachPhone('fPhone');
+}
+function keepForm(){
+  if($('fName'))S.sel.name=$('fName').value;
+  if($('fPhone'))S.sel.phone=$('fPhone').value;
+  if($('fAddr'))S.sel.address=$('fAddr').value;
+  if($('fNote'))S.sel.note=$('fNote').value;
+}
+function scrollTo(id){setTimeout(()=>{const el=$(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},50);}
+
+async function loadDates(){
+  S.dates=null;S.times=null;S.loading='dates';render();scrollTo('sec3');
+  try{S.dates=await call('dates',q());}catch(e){toast(e.message);S.dates=[];}
+  S.loading='';render();
+}
+async function loadTimes(){
+  keepForm();S.times=null;S.loading='times';render();scrollTo('sec4');
+  try{S.times=await call('slots',Object.assign(q(),{date:S.sel.date}));}catch(e){toast(e.message);S.times=[];}
+  S.loading='';render();
+}
+
+async function submit(){
+  keepForm();
+  const s=S.sel;
+  if(!String(s.name||'').trim())return toast('請填寫姓名');
+  const ph=phoneHint(s.phone);
+  if(!ph.ok){if($('fPhone'))$('fPhone').focus();return toast(ph.msg?(ph.msg.indexOf('手機')===0?ph.msg:'手機號碼'+ph.msg):'請填寫手機號碼');}
+  s.phone=normPhone(s.phone);
+  if(s.type==='到府'&&!String(s.address||'').trim())return toast('請填寫到府地址');
+  const b=$('submit');b.disabled=true;b.textContent='送出中';
+  try{
+    const r=await call('book',Object.assign(q(),{date:s.date,time:s.time,name:s.name,phone:s.phone,address:s.address,note:s.note}));
+    S.lastPhone=s.phone;
+    renderDone(r);
+  }catch(e){
+    toast(e.message);b.disabled=false;b.textContent='確認預約';
+    if(e.message.indexOf('約走')>=0){delete S.sel.time;loadTimes();}
+  }
+}
+
+function renderDone(r){
+  $('app').innerHTML=`<h1>預約成功</h1><div class="card">
+  <div class="mute" style="text-align:center">你的預約碼</div><div class="big">${esc(r.code)}</div>
+  <div class="mute" style="text-align:center;margin-bottom:10px">${S.mode==='line'?'確認訊息已傳到你的 LINE':'請截圖或記下預約碼 查詢和取消時會用到'}</div>
+  <div class="kv"><span>日期</span><span>${esc(r.label)}</span></div>
+  <div class="kv"><span>時間</span><span>${r.start}–${r.end}</span></div>
+  <div class="kv"><span>地點</span><span>${esc(r.place)}</span></div>
+  ${r.address?`<div class="kv"><span>地址</span><span>${esc(r.address)}</span></div>`:''}
+  <div class="mute" style="margin-top:10px">如需取消請在課程前 ${S.cfg.cancelHours} 小時以前操作</div>
+  <button class="btn ghost" id="again">回到首頁</button>
+  ${S.mode==='line'&&liff.isInClient()?'<button class="btn ghost" id="close">關閉</button>':''}</div>`;
+  $('again').onclick=()=>{S.sel={};S.dates=null;S.times=null;S.tab='book';render();};
+  if($('close'))$('close').onclick=()=>liff.closeWindow();
+}
+
+/* ====== 我的預約 ====== */
+function mineHtml(){
+  let h='';
+  if(S.mode==='guest'){
+    h+=`<div class="card"><div class="step">查詢預約</div>
+    <label>手機</label><input id="gPhone" type="tel" inputmode="numeric" value="${esc(S.guestQ?S.guestQ.phone:(S.lastPhone||''))}">
+    <label>預約碼</label><input id="gCode" style="text-transform:uppercase" value="${esc(S.guestQ?S.guestQ.code:'')}">
+    <button class="btn" id="gGo">查詢</button></div>`;
+  }
+  if(S.loading==='mine')return h+`<div class="card center mute">查詢中</div>`;
+  if(S.mine){
+    if(!S.mine.length)h+=`<div class="card center mute">目前沒有預約</div>`;
+    S.mine.forEach(r=>{
+      h+=`<div class="card">
+      <div class="kv"><span>日期</span><span>${esc(r.label)}</span></div>
+      <div class="kv"><span>時間</span><span>${r.start}–${r.end}</span></div>
+      <div class="kv"><span>地點</span><span>${esc(r.place)}</span></div>
+      ${r.address?`<div class="kv"><span>地址</span><span>${esc(r.address)}</span></div>`:''}
+      <div class="kv"><span>預約碼</span><span>${esc(r.code)}</span></div>
+      ${r.canCancel?`<button class="btn bad" data-cancel="${r.id}">取消預約</button>`:`<div class="mute" style="margin-top:10px">課程前 ${S.cfg.cancelHours} 小時內無法線上取消 如需異動請直接聯繫我們</div>`}
+      </div>`;
+    });
+  }
+  return h;
+}
+function bindMine(){
+  if(S.tab!=='mine')return;
+  attachPhone('gPhone');
+  if($('gGo'))$('gGo').onclick=()=>{const ph=phoneHint($('gPhone').value);if(!ph.ok)return toast('請填寫正確的手機號碼');S.guestQ={phone:normPhone($('gPhone').value),code:$('gCode').value.trim().toUpperCase()};loadMine();};
+  document.querySelectorAll('[data-cancel]').forEach(el=>el.onclick=async()=>{
+    const r=S.mine.find(x=>x.id===el.dataset.cancel);
+    if(!confirm(`確定取消 ${r.label} ${r.start} 的預約？`))return;
+    el.disabled=true;
+    try{await call('cancel',Object.assign({id:r.id},S.mode==='guest'?S.guestQ:{}));toast('已取消');loadMine();}
+    catch(e){toast(e.message);el.disabled=false;}
+  });
+}
+async function loadMine(){
+  S.loading='mine';render();
+  try{S.mine=await call('mine',S.mode==='guest'?S.guestQ:{});}catch(e){toast(e.message);S.mine=null;}
+  S.loading='';render();
+}
+
+/* ====== 老師綁定 LINE ====== */
+function renderBind(){
+  $('app').innerHTML=`<h1>老師綁定 LINE 通知</h1><div class="card">
+  <div class="mute">綁定後 新預約和取消會推播到這個 LINE</div>
+  <label>員工編號</label><input id="bId"><label>密碼</label><input id="bPw" type="password">
+  <button class="btn" id="bGo">綁定</button></div>`;
+  $('bGo').onclick=async()=>{
+    const b=$('bGo');b.disabled=true;
+    try{const r=await call('bind',{empId:$('bId').value,pw:$('bPw').value});renderMsg(`${r.name} 綁定完成 之後會在這裡收到預約通知`);}
+    catch(e){toast(e.message);b.disabled=false;}
+  };
+}
+
+boot();
+</script>
+</body>
+</html>
