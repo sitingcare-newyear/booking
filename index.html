@@ -162,7 +162,7 @@ function bookHtml(){
   </div></div>`;
   if(s.type==='門市'){
     h+=`<div class="card" id="sec2"><div class="step">2 選擇館別</div><div class="chips">${c.locations.map(l=>`<div class="chip ${s.location===l.name?'on':''}" data-loc="${esc(l.name)}">${esc(l.name)}</div>`).join('')}</div>
-    ${s.location?(()=>{const l=c.locations.find(x=>x.name===s.location);return l&&l.address?`<div class="mute" style="margin-top:8px">${esc(l.address)}</div>`:'';})():''}</div>`;
+    ${s.location?(()=>{const l=c.locations.find(x=>x.name===s.location);if(!l||(!l.address&&!l.map))return '';return `<div class="mute" style="margin-top:8px">${esc(l.address||'')}${l.map?` <a href="${esc(l.map)}" target="_blank" style="color:var(--main)">查看地圖</a>`:''}</div>`;})():''}</div>`;
   }
   if(s.type==='到府'){
     h+=`<div class="card" id="sec2"><div class="step">2 選擇服務區域</div>
