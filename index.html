@@ -96,7 +96,10 @@ function toGuest(){S.mode='guest';S.idToken='';S.loginFailed=true;S.mine=null;}
 function flag(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v);}catch(e){return null;}}
 function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);}
 
+let initP=null;
+function prefetchInit(){if(!initP)initP=call('init').catch(e=>{initP=null;throw e;});return initP;}
 async function boot(){
+  prefetchInit();
   if(params.get('guest')){S.mode='guest';return start();}
   try{
     if(typeof liff==='undefined')throw new Error('no sdk');
@@ -131,7 +134,7 @@ function renderMsg(m){$('app').innerHTML=`<div class="card center">${esc(m)}</di
 
 async function start(){
   renderMsg('載入中');
-  try{S.cfg=await call('init');}catch(e){return renderMsg('系統暫時無法使用 請稍後再試');}
+  try{S.cfg=await prefetchInit();}catch(e){return renderMsg('系統暫時無法使用 請稍後再試');}
   render();
 }
 
@@ -206,7 +209,7 @@ function bindBook(){
   document.querySelectorAll('[data-loc]').forEach(el=>el.onclick=()=>{S.sel={type:'門市',location:el.dataset.loc};loadDates();});
   if($('county'))$('county').onchange=e=>{S.sel={type:'到府',county:e.target.value};S.dates=null;render();};
   if($('district'))$('district').onchange=e=>{S.sel={type:'到府',county:S.sel.county,district:e.target.value};if(e.target.value)loadDates();else render();};
-  document.querySelectorAll('[data-date]').forEach(el=>el.onclick=()=>{S.sel.date=el.dataset.date;delete S.sel.time;loadTimes();});
+  document.querySelectorAll('[data-date]').forEach(el=>el.onclick=()=>{keepForm();S.sel.date=el.dataset.date;delete S.sel.time;const d=(S.dates||[]).find(x=>x.date===S.sel.date);if(d&&d.times){S.times=d.times;render();scrollTo('sec4');}else loadTimes();});
   document.querySelectorAll('[data-time]').forEach(el=>el.onclick=()=>{keepForm();S.sel.time=el.dataset.time;render();scrollTo('sec5');});
   if($('submit'))$('submit').onclick=submit;
   attachPhone('fPhone');
@@ -226,7 +229,7 @@ async function loadDates(){
 }
 async function loadTimes(){
   keepForm();S.times=null;S.loading='times';render();scrollTo('sec4');
-  try{S.times=await call('slots',Object.assign(q(),{date:S.sel.date}));}catch(e){toast(e.message);S.times=[];}
+  try{S.times=await call('slots',Object.assign(q(),{date:S.sel.date}));const d=(S.dates||[]).find(x=>x.date===S.sel.date);if(d)d.times=S.times;}catch(e){toast(e.message);S.times=[];}
   S.loading='';render();
 }
 
