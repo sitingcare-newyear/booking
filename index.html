@@ -5,41 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>線上預約</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f3ef;--card:#fff;--ink:#2f2a26;--mute:#8a817a;--line:#e7e0d8;--main:#b5766a;--main2:#f3e4df;--bad:#b9534a}
+:root{--bg:#F4EEE4;--card:#FBF8F2;--ink:#4E3F36;--mute:#9A8A7E;--line:#E7DCCF;--main:#B4532A;--main2:#D77B3F;--soft:#F6E4D4;--bad:#B4432E;--ok:#6E8F5C}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px}
-.wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
-h1{font-size:20px;margin:6px 0 2px}
-.hello{color:var(--mute);font-size:14px;margin-bottom:14px}
-.tabs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
-.tab{flex:1;text-align:center;padding:10px;border-radius:9px;cursor:pointer}
-.tab.on{background:var(--main);color:#fff}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
-.step{font-size:13px;color:var(--main);font-weight:600;margin-bottom:8px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:#fff;cursor:pointer;font-size:15px}
-.chip.on{background:var(--main);color:#fff;border-color:var(--main)}
-.seg{display:flex;gap:10px}
-.seg .chip{flex:1;text-align:center;padding:14px;border-radius:12px}
-.seg .chip small{display:block;font-size:12px;opacity:.75;margin-top:2px}
-label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
-input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;font-family:inherit;color:var(--ink)}
-.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--main);color:#fff;font-size:16px;margin-top:16px;cursor:pointer;font-family:inherit}
-.btn.ghost{background:var(--main2);color:var(--main)}
-.btn.bad{background:#f6e1df;color:var(--bad)}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:"Huninn","Zen Maru Gothic",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;font-size:16px;
+background-color:var(--bg);
+background-image:radial-gradient(circle at 50% 100%,transparent 18px,rgba(180,140,110,.10) 19px,transparent 20px,transparent 26px,rgba(180,140,110,.08) 27px,transparent 28px);
+background-size:56px 28px}
+.brand{background:linear-gradient(180deg,#D98A4E,#C96B34);color:#fff;padding:18px 16px 26px;text-align:center;border-radius:0 0 28px 28px;box-shadow:0 4px 14px rgba(150,80,40,.18)}
+.brand img{width:68px;height:68px;border-radius:50%;border:3px solid rgba(255,255,255,.85);display:block;margin:0 auto 8px}
+.brand .t1{font-size:19px;font-weight:900;letter-spacing:4px}
+.brand .t2{font-size:12px;letter-spacing:2px;opacity:.9;margin-top:2px}
+.wrap{max-width:520px;margin:0 auto;padding:16px 14px 48px}
+h1{font-size:22px;font-weight:900;margin:6px 4px 12px;color:var(--main);letter-spacing:3px;text-align:center}
+.hello{color:var(--mute);font-size:14px;margin:0 4px 12px;text-align:center;letter-spacing:2px}
+.tabs{display:flex;background:#EBDFD2;border-radius:999px;padding:5px;margin-bottom:16px}
+.tab{flex:1;text-align:center;padding:10px;border-radius:999px;cursor:pointer;font-weight:700;color:#8C6F5E;letter-spacing:2px}
+.tab.on{background:var(--main);color:#fff;box-shadow:0 2px 8px rgba(180,83,42,.3)}
+.card{background:var(--card);border:6px solid #EADFD3;border-radius:22px;padding:16px;margin-bottom:16px;overflow:hidden}
+.step{margin:-16px -16px 14px;padding:11px 16px;background:var(--main);color:#fff;font-weight:900;font-size:16px;letter-spacing:3px;display:flex;align-items:center;justify-content:center;gap:10px}
+.step .n{width:26px;height:26px;border-radius:50%;background:#fff;color:var(--main);display:inline-flex;align-items:center;justify-content:center;font-size:14px;letter-spacing:0}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{padding:10px 16px;border:2px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-size:15px;font-weight:700;color:var(--ink);letter-spacing:1px}
+.chip.on{background:var(--main);color:#fff;border-color:var(--main);box-shadow:0 2px 8px rgba(180,83,42,.25)}
+.seg{display:flex;gap:12px}
+.seg .chip{flex:1;text-align:center;padding:16px 8px;border-radius:20px;font-size:17px;letter-spacing:3px}
+.seg .chip svg{width:34px;height:34px;display:block;margin:0 auto 6px}
+.seg .chip small{display:block;font-size:12px;opacity:.8;margin-top:2px;letter-spacing:1px;font-weight:500}
+label{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px;font-weight:700;letter-spacing:1px}
+input,select,textarea{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:14px;font-size:16px;background:#fff;font-family:inherit;color:var(--ink);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--main2)}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:999px;background:var(--main);color:#fff;font-size:17px;font-weight:900;letter-spacing:4px;margin-top:18px;cursor:pointer;font-family:inherit;box-shadow:0 3px 10px rgba(180,83,42,.3)}
+.btn.ghost{background:var(--soft);color:var(--main);box-shadow:none}
+.btn.bad{background:#F5DCD3;color:var(--bad);box-shadow:none}
 .btn:disabled{opacity:.5}
 .mute{color:var(--mute);font-size:14px}
-.note{background:var(--main2);color:var(--main);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px}
-.big{font-size:28px;letter-spacing:4px;font-weight:700;color:var(--main);text-align:center;margin:8px 0}
-.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.note{background:var(--soft);color:var(--main);border-radius:14px;padding:10px 14px;font-size:14px;margin-bottom:14px;font-weight:500;text-align:center}
+.big{font-size:34px;letter-spacing:6px;font-weight:900;color:var(--main);text-align:center;margin:6px 0 10px;background:var(--soft);border-radius:16px;padding:10px 0}
+.kv{display:flex;justify-content:space-between;padding:10px 2px;border-bottom:1px dashed var(--line);gap:12px}
 .kv:last-child{border:none}
-.kv span:first-child{color:var(--mute)}
+.kv span:first-child{color:var(--mute);font-weight:700;flex:none}
+.kv span:last-child{text-align:right;font-weight:500}
 .center{text-align:center;padding:40px 0}
-#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#2f2a26;color:#fff;padding:12px 18px;border-radius:22px;display:none;z-index:20;max-width:90%;text-align:center;font-size:15px}
+.foot{text-align:center;color:var(--mute);font-size:12px;letter-spacing:2px;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#4E3F36;color:#fff;padding:12px 20px;border-radius:999px;display:none;z-index:20;max-width:90%;text-align:center;font-size:15px}
 </style>
 </head>
 <body>
+<div class="brand"><img src="data:image/jpeg;base64,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" alt="思庭國際泌乳諮詢"><div class="t1">思庭國際泌乳諮詢</div><div class="t2">春節線上預約 SiTing International Mother Care</div></div>
 <div class="wrap" id="app"><div class="center mute">載入中</div></div>
 <div id="toast"></div>
 <script>
@@ -122,7 +138,7 @@ async function boot(){
 }
 
 function renderLoginChoice(){
-  $('app').innerHTML=`<h1>線上預約</h1><div class="card">
+  $('app').innerHTML=`<div class="card">
   <div class="mute">用 LINE 登入可以收到預約通知 也能直接查詢自己的預約</div>
   <button class="btn" id="goLine">用 LINE 登入</button>
   <button class="btn ghost" id="goGuest">不登入 用手機預約</button></div>`;
@@ -140,7 +156,7 @@ async function start(){
 
 function render(){
   const c=S.cfg;
-  let h=`<h1>線上預約</h1><div class="hello">${S.mode==='line'?(S.name?esc(S.name)+' 你好':'已用 LINE 登入'):'訪客模式'}</div>`;
+  let h=`<div class="hello">${S.mode==='line'?(S.name?esc(S.name)+' 你好':'已用 LINE 登入'):'訪客模式'}</div>`;
   if(S.loginFailed)h+=`<div class="note">LINE 登入暫時無法使用 你可以直接用手機預約 完成後請記下預約碼</div>`;
   h+=`<div class="tabs"><div class="tab ${S.tab==='book'?'on':''}" data-tab="book">我要預約</div><div class="tab ${S.tab==='mine'?'on':''}" data-tab="mine">我的預約</div></div>`;
   if(S.tab==='book')h+=c.opensOn?`<div class="card center">預約將於 ${esc(c.opensOn)} 開放<br><span class="mute">敬請期待</span></div>`:bookHtml();
@@ -159,36 +175,36 @@ function q(){const s=S.sel;return {type:s.type,location:s.location,county:s.coun
 function bookHtml(){
   const c=S.cfg,s=S.sel;
   const hasHome=Object.keys(c.areas).length>0;
-  let h=`<div class="card"><div class="step">1 選擇服務方式</div><div class="seg">
-  <div class="chip ${s.type==='門市'?'on':''}" data-type="門市">門市<small>${c.dur['門市']} 分鐘</small></div>
-  ${hasHome?`<div class="chip ${s.type==='到府'?'on':''}" data-type="到府">到府<small>${c.dur['到府']} 分鐘</small></div>`:''}
+  let h=`<div class="card"><div class="step"><span class="n">1</span>選擇服務方式</div><div class="seg">
+  <div class="chip ${s.type==='門市'?'on':''}" data-type="門市"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"><path d="M24 43s14-13 14-24a14 14 0 0 0-28 0c0 11 14 24 14 24z"/><circle cx="24" cy="19" r="5"/></svg>門市<small>${c.dur['門市']} 分鐘</small></div>
+  ${hasHome?`<div class="chip ${s.type==='到府'?'on':''}" data-type="到府"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"><path d="M6 22 24 7l18 15"/><path d="M11 19v21h26V19"/><path d="M20 40V28h8v12"/></svg>到府<small>${c.dur['到府']} 分鐘</small></div>`:''}
   </div></div>`;
   if(s.type==='門市'){
-    h+=`<div class="card" id="sec2"><div class="step">2 選擇館別</div><div class="chips">${c.locations.map(l=>`<div class="chip ${s.location===l.name?'on':''}" data-loc="${esc(l.name)}">${esc(l.name)}</div>`).join('')}</div>
+    h+=`<div class="card" id="sec2"><div class="step"><span class="n">2</span>選擇館別</div><div class="chips">${c.locations.map(l=>`<div class="chip ${s.location===l.name?'on':''}" data-loc="${esc(l.name)}">${esc(l.name)}</div>`).join('')}</div>
     ${s.location?(()=>{const l=c.locations.find(x=>x.name===s.location);if(!l||(!l.address&&!l.map))return '';return `<div class="mute" style="margin-top:8px">${esc(l.address||'')}${l.map?` <a href="${esc(l.map)}" target="_blank" style="color:var(--main)">查看地圖</a>`:''}</div>`;})():''}</div>`;
   }
   if(s.type==='到府'){
-    h+=`<div class="card" id="sec2"><div class="step">2 選擇服務區域</div>
+    h+=`<div class="card" id="sec2"><div class="step"><span class="n">2</span>選擇服務區域</div>
     <label>縣市</label><select id="county"><option value="">請選擇</option>${Object.keys(c.areas).map(x=>`<option ${s.county===x?'selected':''}>${esc(x)}</option>`).join('')}</select>
     ${s.county?`<label>行政區</label><select id="district"><option value="">請選擇</option>${(c.areas[s.county]||[]).map(x=>`<option ${s.district===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`:''}
     <div class="mute" style="margin-top:8px">找不到你的區域 代表目前還沒開放到府服務</div></div>`;
   }
   if(placeReady()){
-    h+=`<div class="card" id="sec3"><div class="step">3 選擇日期</div>`;
+    h+=`<div class="card" id="sec3"><div class="step"><span class="n">3</span>選擇日期</div>`;
     if(S.loading==='dates')h+=`<div class="mute">查詢中</div>`;
     else if(!S.dates||!S.dates.length)h+=`<div class="mute">目前沒有可預約的日期</div>`;
     else h+=`<div class="chips">${S.dates.map(d=>`<div class="chip ${s.date===d.date?'on':''}" data-date="${d.date}">${esc(d.label)}</div>`).join('')}</div>`;
     h+=`</div>`;
   }
   if(s.date){
-    h+=`<div class="card" id="sec4"><div class="step">4 選擇時段</div>`;
+    h+=`<div class="card" id="sec4"><div class="step"><span class="n">4</span>選擇時段</div>`;
     if(S.loading==='times')h+=`<div class="mute">查詢中</div>`;
     else if(!S.times||!S.times.length)h+=`<div class="mute">這天已經約滿了 請換一天</div>`;
     else h+=`<div class="chips">${S.times.map(t=>`<div class="chip ${s.time===t?'on':''}" data-time="${t}">${t}</div>`).join('')}</div>`;
     h+=`</div>`;
   }
   if(s.time){
-    h+=`<div class="card" id="sec5"><div class="step">5 填寫資料</div>
+    h+=`<div class="card" id="sec5"><div class="step"><span class="n">5</span>填寫資料</div>
     <label>姓名</label><input id="fName" value="${esc(s.name||S.name)}" autocomplete="name">
     <label>手機</label><input id="fPhone" type="tel" inputmode="numeric" placeholder="0912345678" value="${esc(s.phone||'')}" autocomplete="tel">
     ${s.type==='到府'?`<label>到府地址</label><input id="fAddr" value="${esc(s.address||'')}" placeholder="${esc(s.county+s.district)}…">`:''}
