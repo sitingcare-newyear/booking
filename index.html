@@ -50,6 +50,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--main2)}
 .kv span:first-child{color:var(--mute);font-weight:700;flex:none}
 .kv span:last-child{text-align:right;font-weight:500}
 .center{text-align:center;padding:40px 0}
+.shot{text-align:center;background:var(--main);color:#fff;border-radius:999px;padding:8px;font-weight:900;letter-spacing:3px;margin-bottom:12px}
+.when{text-align:center;margin:4px 0 8px}
+.when .wd{color:var(--main);font-size:18px;font-weight:900;letter-spacing:2px}
+.when .wt{font-size:30px;font-weight:900;letter-spacing:2px}
+.remind{white-space:normal;word-break:keep-all;background:#fff;border:2px dashed var(--main2);border-radius:16px;padding:12px 14px;margin-top:14px;font-size:14px;line-height:1.7;text-align:center;color:var(--ink)}
+.lnk{color:var(--main);font-size:13px;margin-left:6px}
+a.btn{text-align:center;text-decoration:none;box-sizing:border-box}
+.btn.line{background:#06C755;box-shadow:0 3px 10px rgba(6,199,85,.3)}
 .foot{text-align:center;color:var(--mute);font-size:12px;letter-spacing:2px;margin-top:8px}
 #toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#4E3F36;color:#fff;padding:12px 20px;border-radius:999px;display:none;z-index:20;max-width:90%;text-align:center;font-size:15px}
 </style>
@@ -60,6 +68,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--main2)}
 <div id="toast"></div>
 <script>
 /* ====== 請填入這兩個值 ====== */
+const LINE_OA_URL = 'https://line.me/R/ti/p/@967rfcmx';
+const TEAM_URL = 'https://sitingcare.com/team/';
 const LIFF_ID = '2012558816-evy328ae';
 const API_URL = 'https://script.google.com/macros/s/AKfycbwHzWnumTQDz4G9JUipxXVp90SnpOCDVAdtlAystjGxChc98LBIeRc56j0yk4YiK96WhA/exec';
 /* =========================== */
@@ -169,6 +179,16 @@ function render(){
 }
 
 /* ====== 預約流程 ====== */
+const REGIONS=[
+ {name:'雙北',items:[['台北市','中山區'],['台北市','大同區'],['台北市','松山區'],['台北市','信義區'],['台北市','中正區'],['台北市','大安區'],['台北市','萬華區'],['台北市','南港區'],['台北市','內湖區'],['新北市','汐止區'],['新北市','蘆洲區'],['新北市','三重區'],['新北市','新莊區'],['新北市','板橋區'],['新北市','永和區'],['新北市','中和區'],['新北市','土城區'],['新北市','樹林區']]},
+ {name:'桃園',items:[['桃園市','桃園區'],['桃園市','八德區'],['桃園市','大溪區'],['桃園市','蘆竹區'],['桃園市','中壢區'],['桃園市','平鎮區'],['桃園市','大園區'],['桃園市','觀音區'],['桃園市','新屋區'],['桃園市','楊梅區'],['桃園市','龍潭區'],['桃園市','龜山區']]},
+ {name:'新竹',items:[['新竹市','新竹市'],['新竹縣','竹北市'],['新竹縣','竹東鎮'],['新竹縣','新埔鎮'],['新竹縣','芎林鄉'],['新竹縣','湖口鄉']]},
+ {name:'台中',items:[['台中市','中區'],['台中市','北區'],['台中市','西區'],['台中市','西屯區'],['台中市','南屯區']]},
+ {name:'台南',items:[['台南市','中西區'],['台南市','北區'],['台南市','東區'],['台南市','永康區'],['台南市','安平區'],['台南市','南區'],['台南市','安南區'],['台南市','歸仁區'],['台南市','仁德區'],['台南市','善化區'],['台南市','新市區'],['台南市','新化區'],['台南市','安定區']]}
+];
+function areaName(c,d){return c===d?d:c+d;}
+// 只列出有老師開放的區域
+function availRegions(c){return REGIONS.map(r=>({name:r.name,items:r.items.filter(it=>(c.areas[it[0]]||[]).indexOf(it[1])>=0)})).filter(r=>r.items.length);}
 function placeReady(){const s=S.sel;return s.type==='門市'?!!s.location:(s.type==='到府'&&!!s.county&&!!s.district);}
 function q(){const s=S.sel;return {type:s.type,location:s.location,county:s.county,district:s.district};}
 
@@ -185,9 +205,13 @@ function bookHtml(){
   }
   if(s.type==='到府'){
     h+=`<div class="card" id="sec2"><div class="step"><span class="n">2</span>選擇服務區域</div>
-    <label>縣市</label><select id="county"><option value="">請選擇</option>${Object.keys(c.areas).map(x=>`<option ${s.county===x?'selected':''}>${esc(x)}</option>`).join('')}</select>
-    ${s.county?`<label>行政區</label><select id="district"><option value="">請選擇</option>${(c.areas[s.county]||[]).map(x=>`<option ${s.district===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`:''}
-    <div class="mute" style="margin-top:8px">找不到你的區域 代表目前還沒開放到府服務</div></div>`;
+    <div class="note">到府服務需另加車馬費 車馬費可以在 LINE 預約圖文選單的「居家服務區域」查看</div>
+    ${(()=>{const regs=availRegions(c);if(!regs.length)return '<div class="mute">目前還沒有開放到府服務的區域</div>';
+      let x=`<div class="chips" style="justify-content:center">${regs.map(r=>`<div class="chip ${s.region===r.name?'on':''}" data-rg="${r.name}">${r.name}</div>`).join('')}</div>`;
+      const reg=regs.find(r=>r.name===s.region);
+      if(reg)x+=`<label style="text-align:center">選擇行政區</label><div class="chips" style="justify-content:center">${reg.items.map(it=>`<div class="chip ${s.county===it[0]&&s.district===it[1]?'on':''}" data-ac="${it[0]}" data-ad="${it[1]}">${it[1]}</div>`).join('')}</div>`;
+      return x;})()}
+    <div class="mute" style="margin-top:10px;text-align:center">找不到你的區域 代表目前還沒開放到府服務</div></div>`;
   }
   if(placeReady()){
     h+=`<div class="card" id="sec3"><div class="step"><span class="n">3</span>選擇日期</div>`;
@@ -207,12 +231,12 @@ function bookHtml(){
     h+=`<div class="card" id="sec5"><div class="step"><span class="n">5</span>填寫資料</div>
     <label>姓名</label><input id="fName" value="${esc(s.name||S.name)}" autocomplete="name">
     <label>手機</label><input id="fPhone" type="tel" inputmode="numeric" placeholder="0912345678" value="${esc(s.phone||'')}" autocomplete="tel">
-    ${s.type==='到府'?`<label>到府地址</label><input id="fAddr" value="${esc(s.address||'')}" placeholder="${esc(s.county+s.district)}…">`:''}
+    ${s.type==='到府'?`<label>到府地址</label><input id="fAddr" value="${esc(s.address||'')}" placeholder="${esc(areaName(s.county,s.district))}…"><div class="note" style="margin-top:10px">到府服務需另加車馬費 車馬費可以在 LINE 預約圖文選單的「居家服務區域」查看</div>`:''}
     <label>備註 選填</label><textarea id="fNote" rows="2">${esc(s.note||'')}</textarea>
     <div class="card" style="margin:16px 0 0;background:var(--bg)">
       <div class="kv"><span>日期</span><span>${esc((S.dates.find(d=>d.date===s.date)||{}).label||s.date)}</span></div>
       <div class="kv"><span>時間</span><span>${s.time}</span></div>
-      <div class="kv"><span>地點</span><span>${esc(s.type==='門市'?s.location:'到府 '+s.county+s.district)}</span></div>
+      <div class="kv"><span>地點</span><span>${esc(s.type==='門市'?s.location:'到府 '+areaName(s.county,s.district))}</span></div>
     </div>
     <button class="btn" id="submit">確認預約</button></div>`;
   }
@@ -223,8 +247,8 @@ function bindBook(){
   if(S.tab!=='book')return;
   document.querySelectorAll('[data-type]').forEach(el=>el.onclick=()=>{S.sel={type:el.dataset.type};S.dates=null;S.times=null;render();scrollTo('sec2');});
   document.querySelectorAll('[data-loc]').forEach(el=>el.onclick=()=>{S.sel={type:'門市',location:el.dataset.loc};loadDates();});
-  if($('county'))$('county').onchange=e=>{S.sel={type:'到府',county:e.target.value};S.dates=null;render();};
-  if($('district'))$('district').onchange=e=>{S.sel={type:'到府',county:S.sel.county,district:e.target.value};if(e.target.value)loadDates();else render();};
+  document.querySelectorAll('[data-rg]').forEach(el=>el.onclick=()=>{S.sel={type:'到府',region:el.dataset.rg};S.dates=null;S.times=null;render();});
+  document.querySelectorAll('[data-ad]').forEach(el=>el.onclick=()=>{S.sel={type:'到府',region:S.sel.region,county:el.dataset.ac,district:el.dataset.ad};loadDates();});
   document.querySelectorAll('[data-date]').forEach(el=>el.onclick=()=>{keepForm();S.sel.date=el.dataset.date;delete S.sel.time;const d=(S.dates||[]).find(x=>x.date===S.sel.date);if(d&&d.times){S.times=d.times;render();scrollTo('sec4');}else loadTimes();});
   document.querySelectorAll('[data-time]').forEach(el=>el.onclick=()=>{keepForm();S.sel.time=el.dataset.time;render();scrollTo('sec5');});
   if($('submit'))$('submit').onclick=submit;
@@ -270,17 +294,16 @@ async function submit(){
 
 function renderDone(r){
   $('app').innerHTML=`<h1>預約成功</h1><div class="card">
+  <div class="shot">請截圖保存此畫面</div>
   <div class="mute" style="text-align:center">你的預約碼</div><div class="big">${esc(r.code)}</div>
-  <div class="mute" style="text-align:center;margin-bottom:10px">${S.mode==='line'?'確認訊息已傳到你的 LINE':'請截圖或記下預約碼 查詢和取消時會用到'}</div>
-  <div class="kv"><span>日期</span><span>${esc(r.label)}</span></div>
-  <div class="kv"><span>時間</span><span>${r.start}–${r.end}</span></div>
+  <div class="when"><div class="wd">${esc(r.label)}</div><div class="wt">${r.start}–${r.end}</div></div>
   <div class="kv"><span>地點</span><span>${esc(r.place)}</span></div>
   ${r.address?`<div class="kv"><span>地址</span><span>${esc(r.address)}</span></div>`:''}
-  <div class="mute" style="margin-top:10px">如需取消請在課程前 ${S.cfg.cancelHours} 小時以前操作</div>
-  <button class="btn ghost" id="again">回到首頁</button>
-  ${S.mode==='line'&&liff.isInClient()?'<button class="btn ghost" id="close">關閉</button>':''}</div>`;
-  $('again').onclick=()=>{S.sel={};S.dates=null;S.times=null;S.tab='book';render();};
-  if($('close'))$('close').onclick=()=>liff.closeWindow();
+  ${r.teacher?`<div class="kv"><span>服務老師</span><span>${esc(r.teacher)} <a href="${TEAM_URL}" target="_blank" class="lnk">認識老師</a></span></div>`:''}
+  ${r.type==='到府'?'<div class="note" style="margin-top:12px">到府服務需另加車馬費 車馬費可以在 LINE 預約圖文選單的「居家服務區域」查看</div>':''}
+  <div class="remind">如有成功綁定 LINE 進行預約<br>可於春節 LINE 收到預約成功訊息<br>如無綁定 請加入<a href="${LINE_OA_URL}" target="_top" class="lnk">春節思庭官方 LINE</a><br>並傳送此畫面截圖<br>方便當天服務老師與您聯繫</div>
+  <div class="mute" style="margin-top:10px;text-align:center">如需取消請在課程前 ${S.cfg.cancelHours} 小時以前操作</div>
+  <a class="btn line" href="${LINE_OA_URL}" target="_top">回到 LINE</a></div>`;
 }
 
 /* ====== 我的預約 ====== */
@@ -301,6 +324,7 @@ function mineHtml(){
       <div class="kv"><span>時間</span><span>${r.start}–${r.end}</span></div>
       <div class="kv"><span>地點</span><span>${esc(r.place)}</span></div>
       ${r.address?`<div class="kv"><span>地址</span><span>${esc(r.address)}</span></div>`:''}
+      ${r.teacher?`<div class="kv"><span>服務老師</span><span>${esc(r.teacher)}</span></div>`:''}
       <div class="kv"><span>預約碼</span><span>${esc(r.code)}</span></div>
       ${r.canCancel?`<button class="btn bad" data-cancel="${r.id}">取消預約</button>`:`<div class="mute" style="margin-top:10px">課程前 ${S.cfg.cancelHours} 小時內無法線上取消 如需異動請直接聯繫我們</div>`}
       </div>`;
