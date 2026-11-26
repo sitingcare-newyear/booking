@@ -302,7 +302,7 @@ function renderDone(r){
   ${r.teacher?`<div class="kv"><span>服務老師</span><span>${esc(r.teacher)} <a href="${TEAM_URL}" target="_blank" class="lnk">認識老師</a></span></div>`:''}
   ${r.type==='到府'?'<div class="note" style="margin-top:12px">到府服務需另加車馬費 車馬費可以在 LINE 預約圖文選單的「居家服務區域」查看</div>':''}
   <div class="remind">如有成功綁定 LINE 進行預約<br>可於春節 LINE 收到預約成功訊息<br>如無綁定 請加入<a href="${LINE_OA_URL}" target="_top" class="lnk">春節思庭官方 LINE</a><br>並傳送此畫面截圖<br>方便當天服務老師與您聯繫</div>
-  <div class="mute" style="margin-top:10px;text-align:center">如需取消請在課程前 ${S.cfg.cancelHours} 小時以前操作</div>
+  <div class="mute" style="margin-top:10px;text-align:center">如需取消請在課程前 ${r.cancelHours} 小時以前操作</div>
   <a class="btn line" href="${LINE_OA_URL}" target="_top">回到 LINE</a></div>`;
 }
 
@@ -326,7 +326,7 @@ function mineHtml(){
       ${r.address?`<div class="kv"><span>地址</span><span>${esc(r.address)}</span></div>`:''}
       ${r.teacher?`<div class="kv"><span>服務老師</span><span>${esc(r.teacher)}</span></div>`:''}
       <div class="kv"><span>預約碼</span><span>${esc(r.code)}</span></div>
-      ${r.canCancel?`<button class="btn bad" data-cancel="${r.id}">取消預約</button>`:`<div class="mute" style="margin-top:10px">課程前 ${S.cfg.cancelHours} 小時內無法線上取消 如需異動請直接聯繫我們</div>`}
+      ${r.canCancel?`<button class="btn bad" data-cancel="${r.id}">取消預約</button>`:`<div class="mute" style="margin-top:10px">課程前 ${r.cancelHours} 小時內無法線上取消 如需異動請直接聯繫我們</div>`}
       </div>`;
     });
   }
